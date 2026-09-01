@@ -1,75 +1,74 @@
 import './App.css';
 import { useMemo, useState } from 'react';
 
-const destinations = [
-  { city: 'New York', region: 'United States', code: 'NYC' },
-  { city: 'Boston', region: 'United States', code: 'BOS' },
-  { city: 'Washington D.C.', region: 'United States', code: 'WAS' },
-  { city: 'Philadelphia', region: 'United States', code: 'PHL' },
-  { city: 'Chicago', region: 'United States', code: 'CHI' },
+const products = [
+  { id: 1, name: 'Wireless Headphones', category: 'Electronics', price: 79.99, description: 'Premium sound quality' },
+  { id: 2, name: 'Coffee Maker', category: 'Appliances', price: 49.99, description: 'Brew your perfect cup' },
+  { id: 3, name: 'Desk Lamp', category: 'Lighting', price: 34.99, description: 'Bright and adjustable' },
+  { id: 4, name: 'Phone Stand', category: 'Accessories', price: 19.99, description: 'Sturdy and portable' },
+  { id: 5, name: 'USB-C Cable', category: 'Cables', price: 12.99, description: 'Fast charging enabled' },
+  { id: 6, name: 'Wireless Mouse', category: 'Electronics', price: 29.99, description: 'Precise tracking' },
 ];
 
-const distanceMap = {
-  'New York-Boston': 346,
-  'New York-Washington D.C.': 367,
-  'New York-Philadelphia': 152,
-  'New York-Chicago': 1272,
-  'Boston-Washington D.C.': 714,
-  'Boston-Philadelphia': 533,
-  'Boston-Chicago': 1603,
-  'Washington D.C.-Philadelphia': 225,
-  'Chicago-Philadelphia': 1205,
-  'Chicago-Washington D.C.': 1145,
-};
-
-const transportOptions = [
-  { id: 'car', label: 'Car', icon: 'CAR', rate: 0.22, detail: 'Door-to-door comfort' },
-  { id: 'bus', label: 'Bus', icon: 'BUS', rate: 0.1, detail: 'Low fare, easy ride' },
-  { id: 'plane', label: 'Plane', icon: 'AIR', rate: 0.48, detail: 'Fastest connection' },
+const initialOrders = [
+  { id: 101, date: 'Aug 18, 2026', items: [{ name: 'Wireless Headphones', qty: 1, price: 79.99 }], total: 79.99, status: 'Delivered' },
+  { id: 102, date: 'Aug 10, 2026', items: [{ name: 'Coffee Maker', qty: 1, price: 49.99 }, { name: 'Desk Lamp', qty: 2, price: 34.99 }], total: 119.97, status: 'Delivered' },
 ];
-
-const initialHistory = [
-  { from: 'New York', to: 'Boston', mode: 'Bus', date: 'Aug 14, 2026', distance: 346, price: 34.6, status: 'Completed' },
-  { from: 'Chicago', to: 'New York', mode: 'Plane', date: 'Jul 28, 2026', distance: 1272, price: 610.56, status: 'Completed' },
-];
-
-function getDistance(from, to) {
-  return distanceMap[`${from}-${to}`] || distanceMap[`${to}-${from}`] || 0;
-}
 
 function App() {
   const [page, setPage] = useState('home');
-  const [from, setFrom] = useState('New York');
-  const [to, setTo] = useState('Boston');
-  const [mode, setMode] = useState('car');
-  const [history, setHistory] = useState(initialHistory);
+  const [cart, setCart] = useState([]);
+  const [orders, setOrders] = useState(initialOrders);
   const [confirmed, setConfirmed] = useState(false);
 
-  const selectedTransport = transportOptions.find((option) => option.id === mode);
-  const distance = getDistance(from, to);
-  const price = useMemo(() => distance * (selectedTransport?.rate || 0), [distance, selectedTransport]);
+  const cartItems = cart.length;
+  const cartTotal = useMemo(() => {
+    return cart.reduce((total, item) => total + (item.price * item.qty), 0);
+  }, [cart]);
 
   const changePage = (nextPage) => {
     setConfirmed(false);
     setPage(nextPage);
   };
 
-  const swapLocations = () => {
-    setFrom(to);
-    setTo(from);
+  const addToCart = (product) => {
+    setCart((currentCart) => {
+      const existing = currentCart.find((item) => item.id === product.id);
+      if (existing) {
+        return currentCart.map((item) =>
+          item.id === product.id ? { ...item, qty: item.qty + 1 } : item
+        );
+      }
+      return [...currentCart, { ...product, qty: 1 }];
+    });
   };
 
-  const confirmTrip = () => {
-    const trip = {
-      from,
-      to,
-      mode: selectedTransport.label,
+  const removeFromCart = (productId) => {
+    setCart((currentCart) => currentCart.filter((item) => item.id !== productId));
+  };
+
+  const updateQuantity = (productId, qty) => {
+    if (qty <= 0) {
+      removeFromCart(productId);
+    } else {
+      setCart((currentCart) =>
+        currentCart.map((item) =>
+          item.id === productId ? { ...item, qty } : item
+        )
+      );
+    }
+  };
+
+  const placeOrder = () => {
+    const order = {
+      id: Math.floor(Math.random() * 10000) + 100,
       date: 'Aug 25, 2026',
-      distance,
-      price,
-      status: 'Upcoming',
+      items: cart.map((item) => ({ name: item.name, qty: item.qty, price: item.price })),
+      total: cartTotal,
+      status: 'Processing',
     };
-    setHistory((currentHistory) => [trip, ...currentHistory]);
+    setOrders((currentOrders) => [order, ...currentOrders]);
+    setCart([]);
     setConfirmed(true);
   };
 
@@ -77,49 +76,142 @@ function App() {
     <div className="App">
       <header className="site-header">
         <button className="brand" onClick={() => changePage('home')} aria-label="Go to home">
-          <span className="brand-mark">+</span>
-          <span>Roamly</span>
+          <span className="brand-mark">🛍</span>
+          <span>ShopHub</span>
         </button>
         <nav className="main-nav" aria-label="Main navigation">
-          <button className={page === 'home' ? 'active' : ''} onClick={() => changePage('home')}>Home</button>
-          <button className={page === 'travel' ? 'active' : ''} onClick={() => changePage('travel')}>My travel</button>
+          <button className={page === 'home' ? 'active' : ''} onClick={() => changePage('home')}>Shop</button>
+          <button className={page === 'cart' ? 'active' : ''} onClick={() => changePage('cart')}>Cart {cartItems > 0 && <span className="badge">{cartItems}</span>}</button>
+          <button className={page === 'orders' ? 'active' : ''} onClick={() => changePage('orders')}>Orders</button>
         </nav>
-        <div className="header-profile"><span className="avatar">NS</span><span>Nishitha</span><span className="chevron">v</span></div>
+        <div className="header-profile"><span className="avatar">JS</span><span>John Smith</span><span className="chevron">v</span></div>
       </header>
 
       <main>
         {page === 'home' && (
           <section className="home-page page-shell">
             <div className="hero-copy">
-              <p className="eyebrow">TRAVEL, BETTER CONNECTED</p>
-              <h1>Go somewhere<br /><em>worth going.</em></h1>
-              <p className="hero-intro">One simple place to compare routes, choose your ride, and make the journey yours.</p>
+              <p className="eyebrow">SHOP WITH CONFIDENCE</p>
+              <h1>Premium<br /><em>Products.</em></h1>
+              <p className="hero-intro">Discover quality electronics, appliances, and accessories for your everyday needs.</p>
             </div>
 
-            <div className="booking-panel">
-              <div className="panel-heading"><div><span className="section-kicker">PLAN A NEW TRIP</span><h2>Where are you headed?</h2></div><span className="step-count">01 <i /> 03</span></div>
-              <div className="route-fields">
-                <label><span>FROM</span><select value={from} onChange={(event) => setFrom(event.target.value)}>{destinations.map((place) => <option key={place.city}>{place.city}</option>)}</select><small>{destinations.find((place) => place.city === from)?.code}</small></label>
-                <button className="swap-button" onClick={swapLocations} aria-label="Swap departure and arrival">&#8596;</button>
-                <label><span>TO</span><select value={to} onChange={(event) => setTo(event.target.value)}>{destinations.map((place) => <option key={place.city}>{place.city}</option>)}</select><small>{destinations.find((place) => place.city === to)?.code}</small></label>
+            <div className="products-panel">
+              <div className="panel-heading"><div><span className="section-kicker">FEATURED PRODUCTS</span><h2>Browse our collection</h2></div><span className="step-count">{cart.length} in cart</span></div>
+              <div className="products-grid">
+                {products.map((product) => (
+                  <div key={product.id} className="product-card">
+                    <div className="product-header">
+                      <strong>{product.name}</strong>
+                      <small>{product.category}</small>
+                    </div>
+                    <p className="product-desc">{product.description}</p>
+                    <div className="product-footer">
+                      <span className="product-price">${product.price.toFixed(2)}</span>
+                      <button className="add-btn" onClick={() => addToCart(product)}>Add to Cart</button>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="transport-picker"><span className="field-label">HOW DO YOU WANT TO GO?</span><div className="transport-options">{transportOptions.map((option) => <button key={option.id} className={mode === option.id ? 'transport-option selected' : 'transport-option'} onClick={() => setMode(option.id)}><span className="transport-icon">{option.icon}</span><span><strong>{option.label}</strong><small>{option.detail}</small></span>{mode === option.id && <span className="selected-dot">&#10003;</span>}</button>)}</div></div>
-              {from === to ? <p className="route-warning">Choose two different cities to see your fare.</p> : <div className="fare-preview"><span><strong>{distance.toLocaleString()} km</strong><small>estimated route distance</small></span><span className="fare-value"><small>ESTIMATED FARE</small><strong>${price.toFixed(2)}</strong></span></div>}
-              <button className="primary-button" disabled={from === to} onClick={() => changePage('confirmation')}>Review trip <span>&#8594;</span></button>
+              <div className="home-footnote"><span>FREE SHIPPING</span><span>on orders over $50</span><span>Easy returns</span></div>
             </div>
-            <div className="home-footnote"><span>LOCAL KNOWLEDGE, BUILT IN</span><span>Rates update by route distance</span><span>Secure checkout</span></div>
           </section>
         )}
 
-        {page === 'travel' && (
-          <section className="page-shell travel-page"><div className="page-title"><div><p className="eyebrow">YOUR JOURNEYS</p><h1>My travel</h1><p>Every route you have taken, all in one place.</p></div><button className="primary-button compact" onClick={() => changePage('home')}>Plan another trip <span>+</span></button></div><div className="travel-summary"><div><span className="summary-number">{history.length}</span><span>total trips</span></div><div><span className="summary-number">{history.reduce((total, trip) => total + trip.distance, 0).toLocaleString()}</span><span>km traveled</span></div><div><span className="summary-number">${history.reduce((total, trip) => total + trip.price, 0).toFixed(2)}</span><span>total spent</span></div></div><div className="history-list"><div className="list-header"><span>TRIP HISTORY</span><span>{history.length} journeys</span></div>{history.map((trip, index) => <article className="history-item" key={`${trip.date}-${index}`}><div className="trip-index">{String(index + 1).padStart(2, '0')}</div><div className="trip-route"><strong>{trip.from} <span>&#8594;</span> {trip.to}</strong><small>{trip.date} <i /> {trip.distance.toLocaleString()} km</small></div><div className="trip-mode"><span className={`mode-chip ${trip.mode.toLowerCase()}`}>{trip.mode === 'Plane' ? 'AIR' : trip.mode.toUpperCase()}</span><span>{trip.status}</span></div><strong className="trip-price">${trip.price.toFixed(2)}</strong></article>)}</div></section>
+        {page === 'cart' && (
+          <section className="page-shell cart-page">
+            <div className="page-title"><div><p className="eyebrow">YOUR SHOPPING</p><h1>Shopping Cart</h1><p>{cart.length === 0 ? 'Your cart is empty' : `You have ${cart.length} item${cart.length !== 1 ? 's' : ''} in your cart`}</p></div><button className="primary-button compact" onClick={() => changePage('home')}>Continue Shopping <span>+</span></button></div>
+            {cart.length === 0 ? (
+              <div className="empty-cart"><p>No items in your cart yet. Start shopping!</p></div>
+            ) : (
+              <div className="cart-container">
+                <div className="cart-items">
+                  <div className="cart-header"><span>PRODUCT</span><span>QTY</span><span>PRICE</span><span>TOTAL</span><span></span></div>
+                  {cart.map((item) => (
+                    <div className="cart-item" key={item.id}>
+                      <div className="item-name">
+                        <strong>{item.name}</strong>
+                        <small>{item.category}</small>
+                      </div>
+                      <div className="item-qty">
+                        <button onClick={() => updateQuantity(item.id, item.qty - 1)}>−</button>
+                        <span>{item.qty}</span>
+                        <button onClick={() => updateQuantity(item.id, item.qty + 1)}>+</button>
+                      </div>
+                      <span className="item-price">${item.price.toFixed(2)}</span>
+                      <span className="item-total">${(item.price * item.qty).toFixed(2)}</span>
+                      <button className="remove-btn" onClick={() => removeFromCart(item.id)}>✕</button>
+                    </div>
+                  ))}
+                </div>
+                <div className="cart-summary">
+                  <div className="summary-row"><span>Subtotal</span><strong>${cartTotal.toFixed(2)}</strong></div>
+                  <div className="summary-row"><span>Shipping</span><strong>FREE</strong></div>
+                  <div className="summary-row total"><span>Total</span><strong>${cartTotal.toFixed(2)}</strong></div>
+                  <button className="primary-button full-width" onClick={() => changePage('checkout')}>Proceed to Checkout <span>→</span></button>
+                </div>
+              </div>
+            )}
+          </section>
         )}
 
-        {page === 'confirmation' && (
-          <section className="page-shell confirmation-page"><div className="confirmation-intro"><p className="eyebrow">ALMOST THERE</p><h1>Check your<br /><em>trip details.</em></h1><p>Make sure everything looks right before you set off.</p></div><div className="confirmation-card"><div className="card-top"><span className="section-kicker">TRIP SUMMARY</span><span className="status-label">READY TO BOOK</span></div><div className="big-route"><div><small>DEPARTING FROM</small><strong>{from}</strong><span>{destinations.find((place) => place.city === from)?.code}</span></div><span className="route-line"><i /><b>&#8594;</b><i /></span><div className="arrival"><small>ARRIVING IN</small><strong>{to}</strong><span>{destinations.find((place) => place.city === to)?.code}</span></div></div><div className="detail-grid"><div><small>TRANSPORT</small><strong>{selectedTransport.label}</strong></div><div><small>DISTANCE</small><strong>{distance.toLocaleString()} km</strong></div><div><small>TRAVEL DATE</small><strong>Aug 25, 2026</strong></div><div><small>PASSENGERS</small><strong>1 traveler</strong></div></div><div className="total-row"><span>Total trip fare</span><strong>${price.toFixed(2)}</strong></div><button className="primary-button" onClick={confirmTrip}>{confirmed ? 'Trip confirmed' : 'Confirm and book'} <span>{confirmed ? '&#10003;' : '&#8594;'}</span></button>{confirmed && <p className="confirmation-success">Your trip has been added to My travel.</p>}</div><button className="back-link" onClick={() => changePage('home')}>&#8592; Edit trip details</button></section>
+        {page === 'checkout' && (
+          <section className="page-shell confirmation-page">
+            <div className="confirmation-intro">
+              <p className="eyebrow">ALMOST DONE</p>
+              <h1>Review your<br /><em>order.</em></h1>
+              <p>Make sure everything looks correct before placing your order.</p>
+            </div>
+            <div className="confirmation-card">
+              <div className="card-top"><span className="section-kicker">ORDER SUMMARY</span><span className="status-label">READY TO ORDER</span></div>
+              <div className="order-items">
+                {cart.map((item) => (
+                  <div className="order-item" key={item.id}>
+                    <div><strong>{item.name}</strong><small>Qty: {item.qty}</small></div>
+                    <strong>${(item.price * item.qty).toFixed(2)}</strong>
+                  </div>
+                ))}
+              </div>
+              <div className="detail-grid">
+                <div><small>ITEMS</small><strong>{cart.length}</strong></div>
+                <div><small>SUBTOTAL</small><strong>${cartTotal.toFixed(2)}</strong></div>
+                <div><small>SHIPPING</small><strong>FREE</strong></div>
+                <div><small>TOTAL</small><strong>${cartTotal.toFixed(2)}</strong></div>
+              </div>
+              <div className="total-row"><span>Order Total</span><strong>${cartTotal.toFixed(2)}</strong></div>
+              <button className="primary-button" onClick={placeOrder}>{confirmed ? 'Order placed' : 'Place Order'} <span>{confirmed ? '✓' : '→'}</span></button>
+              {confirmed && <p className="confirmation-success">Your order has been placed successfully! Check your orders page for details.</p>}
+            </div>
+            <button className="back-link" onClick={() => changePage('cart')}>← Back to cart</button>
+          </section>
+        )}
+
+        {page === 'orders' && (
+          <section className="page-shell travel-page">
+            <div className="page-title"><div><p className="eyebrow">YOUR ORDERS</p><h1>Order History</h1><p>Track all your previous purchases</p></div><button className="primary-button compact" onClick={() => changePage('home')}>Continue Shopping <span>+</span></button></div>
+            <div className="travel-summary">
+              <div><span className="summary-number">{orders.length}</span><span>total orders</span></div>
+              <div><span className="summary-number">${orders.reduce((total, order) => total + order.total, 0).toFixed(2)}</span><span>total spent</span></div>
+              <div><span className="summary-number">{orders.filter((o) => o.status === 'Delivered').length}</span><span>delivered</span></div>
+            </div>
+            <div className="history-list">
+              <div className="list-header"><span>ORDER HISTORY</span><span>{orders.length} orders</span></div>
+              {orders.map((order, index) => (
+                <article className="history-item" key={order.id}>
+                  <div className="trip-index">#{order.id}</div>
+                  <div className="trip-route">
+                    <strong>{order.items.map((item) => item.name).join(', ')}</strong>
+                    <small>{order.date} <i /> {order.items.length} item{order.items.length !== 1 ? 's' : ''}</small>
+                  </div>
+                  <div className="trip-mode"><span className={`mode-chip ${order.status.toLowerCase()}`}>{order.status}</span></div>
+                  <strong className="trip-price">${order.total.toFixed(2)}</strong>
+                </article>
+              ))}
+            </div>
+          </section>
         )}
       </main>
-      <footer><span>ROAMLY / 2026</span><span>Made for the miles ahead.</span></footer>
+      <footer><span>SHOPHUB / 2026</span><span>Quality products, delivered to your door.</span></footer>
     </div>
   );
 }
