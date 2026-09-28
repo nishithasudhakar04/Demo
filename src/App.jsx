@@ -10,6 +10,12 @@ const products = [
   { id: 6, name: 'Wireless Mouse', category: 'Electronics', price: 29.99, description: 'Precise tracking' },
 ];
 
+const stores = [
+  { id: 'gachibowli', name: 'ShopHub at Gachibowli', area: 'Gachibowli, Hyderabad', discount: 'Up to 15% off select electronics' },
+  { id: 'banjara-hills', name: 'ShopHub at Banjara Hills', area: 'Banjara Hills, Hyderabad', discount: 'Up to 20% off select home essentials' },
+  { id: 'hitex', name: 'ShopHub at HITEX', area: 'HITEX, Hyderabad', discount: 'Up to 10% off select accessories' },
+];
+
 const initialOrders = [
   { id: 101, date: 'Aug 18, 2026', items: [{ name: 'Wireless Headphones', qty: 1, price: 79.99 }], total: 79.99, status: 'Delivered' },
   { id: 102, date: 'Aug 10, 2026', items: [{ name: 'Coffee Maker', qty: 1, price: 49.99 }, { name: 'Desk Lamp', qty: 2, price: 34.99 }], total: 119.97, status: 'Delivered' },
@@ -81,6 +87,7 @@ function App() {
         </button>
         <nav className="main-nav" aria-label="Main navigation">
           <button className={page === 'home' ? 'active' : ''} onClick={() => changePage('home')}>Shop</button>
+          <button className={page === 'stores' ? 'active' : ''} onClick={() => changePage('stores')}>Stores</button>
           <button className={page === 'cart' ? 'active' : ''} onClick={() => changePage('cart')}>Cart {cartItems > 0 && <span className="badge">{cartItems}</span>}</button>
           <button className={page === 'orders' ? 'active' : ''} onClick={() => changePage('orders')}>Orders</button>
         </nav>
@@ -99,8 +106,10 @@ function App() {
             <div className="products-panel">
               <div className="panel-heading"><div><span className="section-kicker">FEATURED PRODUCTS</span><h2>Browse our collection</h2></div><span className="step-count">{cart.length} in cart</span></div>
               <div className="products-grid">
-                {products.map((product) => (
-                  <div key={product.id} className="product-card">
+                {products.map((product) => {
+                  const cartItem = cart.find((item) => item.id === product.id);
+                  return (
+                    <div key={product.id} className="product-card">
                     <div className="product-header">
                       <strong>{product.name}</strong>
                       <small>{product.category}</small>
@@ -108,12 +117,48 @@ function App() {
                     <p className="product-desc">{product.description}</p>
                     <div className="product-footer">
                       <span className="product-price">${product.price.toFixed(2)}</span>
-                      <button className="add-btn" onClick={() => addToCart(product)}>Add to Cart</button>
+                      {cartItem ? (
+                        <div className="product-quantity">
+                          <span className="added-label">Added</span>
+                          <button aria-label={`Remove one ${product.name}`} onClick={() => updateQuantity(product.id, cartItem.qty - 1)}>−</button>
+                          <span aria-label={`${cartItem.qty} in cart`}>{cartItem.qty}</span>
+                          <button aria-label={`Add one ${product.name}`} onClick={() => addToCart(product)}>+</button>
+                        </div>
+                      ) : (
+                        <button className="add-btn" onClick={() => addToCart(product)}>Add to Cart</button>
+                      )}
                     </div>
-                  </div>
-                ))}
+                    </div>
+                  );
+                })}
               </div>
               <div className="home-footnote"><span>FREE SHIPPING</span><span>on orders over $50</span><span>Easy returns</span></div>
+            </div>
+          </section>
+        )}
+
+        {page === 'stores' && (
+          <section className="page-shell stores-page">
+            <div className="page-title">
+              <div>
+                <p className="eyebrow">SHOPHUB IN HYDERABAD</p>
+                <h1>Visit us<br /><em>in person.</em></h1>
+                <p>Find your nearest branch and explore in-store offers.</p>
+              </div>
+              <span className="store-count">{stores.length} offline stores</span>
+            </div>
+            <div className="store-grid">
+              {stores.map((store, index) => (
+                <article className="store-card" key={store.id}>
+                  <span className="store-number">0{index + 1} / HYDERABAD</span>
+                  <h2>{store.name}</h2>
+                  <p className="store-area">{store.area}</p>
+                  <div className="store-offer">
+                    <span>IN-STORE OFFER</span>
+                    <strong>{store.discount}</strong>
+                  </div>
+                </article>
+              ))}
             </div>
           </section>
         )}
